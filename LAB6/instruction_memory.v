@@ -3,6 +3,7 @@ module instruction_memory(PC, clock, instruction);
     //SAY, MEMORY HOLDS 3 INSTRUCTIONS
 
     input [31:0] PC;
+    input clock;
     output [31:0] instruction;
     
     reg [31: 0] memory [31: 0];

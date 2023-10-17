@@ -1,8 +1,8 @@
-module data_memory(address, readdata, writedata, memread, memwrite);
-    input memread, memwrite;
+module data_memory(clock, address, readdata, writedata, memread, memwrite);
+
+    input memread, memwrite, clock;
     input [31: 0] address, writedata;
     output [31: 0] readdata;
-
     reg readdata;
     reg [31: 0] memory [31: 0];
     integer addr;

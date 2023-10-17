@@ -62,22 +62,37 @@ module reg_32bit (q, d, clk, reset); //Tested
 endmodule
 
 
-module regfile(clk, reset, readreg1, readreg2, writedata, writereg,
-regWrite, readdata1, readdata2);
-
-
+module regfile(clk, reset, registers);
     input clk, reset, regWrite;
-    output [31:0] readdata1, readdata2; //Data read
-    input [31:0] writedata; //Data to be written
-    input [1:0] writereg, readreg1, readreg2; //Addresses 
+    output reg [31:0] registers [3:0]; 
 
-    //wire [3: 0][31: 0] registers; 
-    //Correction 3: This is a wrong way of creating memory (or arrays) in Verilog. 
-    //Use the following Syntax.
+    initial begin
+        //INITIALISE REGISTERS WITH VALUES
+        registers[0] = 32'h1234;
+        registers[1] = 32'h4567;
+        registers[2] = 32'h89AB;
+        registers[3] = 32'hCDEF;
+    end
+
+    
+endmodule
+
+module read_from_regfile(readreg1, readreg2, readdata1, readdata2);
+    input [0:4] readreg1, readreg2;
+    output [0:31] readdata1, readdata2;
     wire [31:0] registers [3:0]; 
-    //[31:0] defines the no of bits in each register and [3:0] specify the number of registers.
-    //This defines an array of 4 registers each with 32 bits.
-    //Each element of array (a register in this case) can be accessed using registers[0], registers[1] and so on..
+
+    //Read Logic: 
+    mux4_1 mux1(readdata1, registers[0], registers[1], registers[2], registers[3], readreg1);
+    mux4_1 mux2(readdata2, registers[0], registers[1], registers[2], registers[3], readreg2);
+
+endmodule
+
+module write_to_regfile(registers, writereg, writedata, regWrite);
+    input [0: 4] writereg;
+    input [0: 31] writedata;
+    input [31:0] registers [3:0]; 
+    input regWrite;
 
     wire [3:0] signals; //Write Enable Signals
     wire [3:0] clocks; 
@@ -92,8 +107,5 @@ regWrite, readdata1, readdata2);
     end
     endgenerate
 
-    //Read Logic: 
-    mux4_1 mux1(readdata1, registers[0], registers[1], registers[2], registers[3], readreg1);
-    mux4_1 mux2(readdata2, registers[0], registers[1], registers[2], registers[3], readreg2);
 
-endmodule;
+endmodule
