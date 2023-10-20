@@ -1,14 +1,7 @@
-module mux4_1(regData, q1, q2, q3, q4, reg_no); //Tested
+module mux4_1(regData, q1, q2, q3, q4, reg_no);
     input [31:0] q1, q2, q3, q4;
     output reg [31:0] regData;
     input [1:0] reg_no;
-
-    //wire not_sel1, not_sel0; 
-    //Correction 1: What is the use of this? Select line is reg_no right? Have commented this
-
-    //always @(reg_no[0] or reg_no[1]) 
-    //Correction 2: The always block should also run when any of the input data is also changed i.e. q1-q4
-    //Replaced the code with always @(*)
     
     always @ (*)
     begin
@@ -21,7 +14,7 @@ module mux4_1(regData, q1, q2, q3, q4, reg_no); //Tested
     end
 endmodule;
 
-module decoder2_4 (register, reg_no); //Tested
+module decoder2_4 (register, reg_no);
     input [1:0] register;
     output [3:0] reg_no;
 
@@ -37,7 +30,7 @@ module decoder2_4 (register, reg_no); //Tested
 
 endmodule
 
-module d_ff(q, d, clock, clearb); //Tested
+module d_ff(q, d, clock, clearb);
     input d, clearb, clock;
     output q;
     reg q;
@@ -48,7 +41,7 @@ module d_ff(q, d, clock, clearb); //Tested
     end
 endmodule
 
-module reg_32bit (q, d, clk, reset); //Tested
+module reg_32bit (q, d, clk, reset);
     input [31:0] d;
     output [31:0] q;
     input clk, reset;
@@ -62,43 +55,29 @@ module reg_32bit (q, d, clk, reset); //Tested
 endmodule
 
 
-module regfile(clk, reset, registers);
-    input clk, reset, regWrite;
-    output reg [31:0] registers [3:0]; 
 
-    initial begin
-        //INITIALISE REGISTERS WITH VALUES
-        registers[0] = 32'h1234;
-        registers[1] = 32'h4567;
-        registers[2] = 32'h89AB;
-        registers[3] = 32'hCDEF;
-    end
-
-    
-endmodule
-
-module read_from_regfile(readreg1, readreg2, readdata1, readdata2);
-    input [0:4] readreg1, readreg2;
-    output [0:31] readdata1, readdata2;
+module read_from_regfile(readreg1, readreg2, readdata1, readdata2); 
+    input [1:0] readreg1, readreg2;
+    output [31:0] readdata1, readdata2;
     wire [31:0] registers [3:0]; 
 
-    //Read Logic: 
     mux4_1 mux1(readdata1, registers[0], registers[1], registers[2], registers[3], readreg1);
     mux4_1 mux2(readdata2, registers[0], registers[1], registers[2], registers[3], readreg2);
 
 endmodule
 
-module write_to_regfile(registers, writereg, writedata, regWrite);
-    input [0: 4] writereg;
-    input [0: 31] writedata;
-    input [31:0] registers [3:0]; 
+module write_to_regfile(writereg, writedata, regWrite, clk);
+
+    input clk;
+    input [1:0] writereg;
+    input [31:0] writedata;
+    wire [31:0] registers [3:0]; 
     input regWrite;
 
-    wire [3:0] signals; //Write Enable Signals
+    wire [3:0] signals;
     wire [3:0] clocks; 
 
-    //Write Logic:    
-    decoder2_4 decode1 (writereg, signals); //Seems correct
+    decoder2_4 decode1 (writereg, signals);
 
     genvar j;
     generate for (j = 0; j < 4; j = j + 1) begin: reg_loop
@@ -107,5 +86,72 @@ module write_to_regfile(registers, writereg, writedata, regWrite);
     end
     endgenerate
 
+endmodule
+
+module RegFile_Final (readreg1, readreg2, readdata1, readdata2, writereg, writedata, regWrite, clk, reset); 
+
+    input [1:0] readreg1, readreg2;
+    output [31:0] readdata1, readdata2;
+    
+    wire [31:0] registers [3:0];
+
+    mux4_1 mux1(readdata1, registers[0], registers[1], registers[2], registers[3], readreg1);
+    mux4_1 mux2(readdata2, registers[0], registers[1], registers[2], registers[3], readreg2);
+
+    input clk, reset;
+    input [1:0] writereg;
+    input [31:0] writedata;
+    input regWrite;
+    wire [3:0] signals; 
+    wire [3:0] clocks; 
+
+    decoder2_4 decode1 (writereg, signals);
+
+    genvar j;
+    generate for (j = 0; j < 4; j = j + 1) begin: reg_loop
+        and aj(clocks[j], clk, regWrite, signals[j]);
+        reg_32bit regj (registers[j], writedata, clocks[j], reset);
+    end
+    endgenerate
+
+endmodule
+
+
+module testbench_regfile;
+
+    reg [1:0] readreg1, readreg2, writereg; 
+    reg regWrite, clk, reset;
+    reg [31:0] writedata;
+    wire [31:0] readdata1, readdata2;
+
+    RegFile_Final DUT (readreg1, readreg2, readdata1, readdata2, writereg, writedata, regWrite, clk, reset);
+
+    initial begin
+        reset = 0;
+        regWrite = 1'b1;
+        #3 reset = 1;
+    end
+
+    initial begin
+        clk = 0;
+        forever begin
+            #2 clk = ~clk;
+        end 
+    end
+
+    initial begin 
+        #4 writereg = 2'b00; writedata = 32'h1234;
+        #4 writereg = 2'b01; writedata = 32'h4567;
+        #4 writereg = 2'b10; writedata = 32'h89AB;
+        #4 writereg = 2'b11; writedata = 32'hCDEF;
+
+        #1 readreg1 = 2'b00; readreg2 = 2'b01;
+        #1 readreg1 = 2'b10; readreg2 = 2'b11;
+    end
+
+    initial begin
+        $monitor ($time, " READ:: readreg1 = %b, readreg2 = %b, readdata1 = %h, readdata2 = %h ::: Clock = %b, Reset = %b", readreg1, readreg2, readdata1, readdata2, clk, reset);
+        #20 $finish;
+    end
 
 endmodule
