@@ -52,6 +52,7 @@ module testbench;
         $monitor($time, "INP1 = %d, INP2 = %d SUM = %d COUT = %b", INP1, INP2, sum, cout);
 
         #100 INP1 = 10'd45;
+        #100 INP1 = 10'd45;
         #1000 $finish;
     end
 endmodule
